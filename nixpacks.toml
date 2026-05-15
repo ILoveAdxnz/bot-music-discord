@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["ffmpeg", "opus", "libopus"]
+
+[phases.install]
+cmds = ["pip install -r requirements.txt"]
+
+[start]
+cmd = "python music_bot.py"
