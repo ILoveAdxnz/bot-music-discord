@@ -7,29 +7,46 @@ import ctypes
 import ctypes.util
 import subprocess
 import sys
+import glob
 
-# Installer opuslib si absent
-subprocess.run([sys.executable, "-m", "pip", "install", "opuslib", "-q"], capture_output=True)
-
-# Charger Opus manuellement
+# Charger Opus — cherche dans les paths nix de Railway
 def load_opus():
     if discord.opus.is_loaded():
         return
-    # Essayer plusieurs noms de lib
-    for lib in ['libopus.so.0', 'libopus.so', 'opus', 'libopus-0.dll', 'libopus.0.dylib']:
-        try:
-            discord.opus.load_opus(lib)
-            print(f"Opus chargé : {lib}")
-            return
-        except Exception:
-            continue
+
+    # Paths typiques sur Railway/Nix
+    candidates = [
+        '/nix/store/*/lib/libopus.so.0',
+        '/nix/store/*/lib/libopus.so',
+        '/usr/lib/x86_64-linux-gnu/libopus.so.0',
+        '/usr/lib/libopus.so.0',
+        'libopus.so.0',
+        'libopus.so',
+        'opus',
+    ]
+
+    for pattern in candidates:
+        matches = glob.glob(pattern)
+        paths = matches if matches else [pattern]
+        for path in paths:
+            try:
+                discord.opus.load_opus(path)
+                print(f"✅ Opus chargé : {path}")
+                return
+            except Exception:
+                continue
+
     # Chercher via ctypes.util
     found = ctypes.util.find_library('opus')
     if found:
-        discord.opus.load_opus(found)
-        print(f"Opus trouvé via ctypes : {found}")
-        return
-    print("Opus non trouvé, le voice peut ne pas fonctionner")
+        try:
+            discord.opus.load_opus(found)
+            print(f"✅ Opus via ctypes : {found}")
+            return
+        except Exception:
+            pass
+
+    print("❌ Opus non trouvé")
 
 load_opus()
 
