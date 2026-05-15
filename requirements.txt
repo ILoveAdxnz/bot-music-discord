@@ -1,4 +1,0 @@
-discord.py[voice]>=2.3.0
-yt-dlp>=2024.1.0
-audioop-lts>=0.2.1
-imageio-ffmpeg>=0.4.9
