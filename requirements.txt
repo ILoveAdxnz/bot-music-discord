@@ -3,3 +3,4 @@ yt-dlp>=2024.1.0
 audioop-lts>=0.2.1
 imageio-ffmpeg>=0.4.9
 opuslib>=3.0.1
+pyogg>=0.6.14a1
