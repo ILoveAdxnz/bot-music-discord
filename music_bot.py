@@ -5,43 +5,48 @@ import asyncio
 import os
 import ctypes
 import ctypes.util
-import subprocess
-import sys
 import glob
 
-# Charger Opus — cherche dans les paths nix de Railway
+# Charger Opus
 def load_opus():
     if discord.opus.is_loaded():
         return
 
-    # Paths typiques sur Railway/Nix
-    candidates = [
-        '/nix/store/*/lib/libopus.so.0',
-        '/nix/store/*/lib/libopus.so',
-        '/usr/lib/x86_64-linux-gnu/libopus.so.0',
-        '/usr/lib/libopus.so.0',
-        'libopus.so.0',
-        'libopus.so',
-        'opus',
-    ]
+    # 1. Depuis variable d'environnement
+    env_path = os.getenv('DISCORD_OPUS_PATH')
+    if env_path:
+        try:
+            discord.opus.load_opus(env_path)
+            print(f"✅ Opus via env : {env_path}")
+            return
+        except Exception as e:
+            print(f"Env path failed: {e}")
 
-    for pattern in candidates:
-        matches = glob.glob(pattern)
-        paths = matches if matches else [pattern]
-        for path in paths:
+    # 2. Chercher dans /nix/store
+    for pattern in ['/nix/store/*/lib/libopus.so.0', '/nix/store/*/lib/libopus.so']:
+        for path in glob.glob(pattern):
             try:
                 discord.opus.load_opus(path)
-                print(f"✅ Opus chargé : {path}")
+                print(f"✅ Opus nix : {path}")
                 return
             except Exception:
                 continue
 
-    # Chercher via ctypes.util
+    # 3. Paths système classiques
+    for lib in ['/usr/lib/x86_64-linux-gnu/libopus.so.0', 'libopus.so.0', 'libopus.so', 'opus']:
+        try:
+            discord.opus.load_opus(lib)
+            print(f"✅ Opus système : {lib}")
+            return
+        except Exception:
+            continue
+
+    # 4. ctypes.util
     found = ctypes.util.find_library('opus')
     if found:
         try:
             discord.opus.load_opus(found)
-            print(f"✅ Opus via ctypes : {found}")
+            print(f"✅ Opus ctypes : {found}")
             return
         except Exception:
             pass
