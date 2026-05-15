@@ -22,7 +22,18 @@ def load_opus():
         except Exception as e:
             print(f"Env path failed: {e}")
 
-    # 2. Chercher dans /nix/store
+    # 2. Via pyogg (embarque les binaires opus)
+    try:
+        import pyogg
+        opus_path = pyogg.OPUS_LIBRARY_PATH
+        if opus_path:
+            discord.opus.load_opus(opus_path)
+            print(f"✅ Opus via pyogg : {opus_path}")
+            return
+    except Exception as e:
+        print(f"pyogg failed: {e}")
+
+    # 3. Chercher dans /nix/store
     for pattern in ['/nix/store/*/lib/libopus.so.0', '/nix/store/*/lib/libopus.so']:
         for path in glob.glob(pattern):
             try:
@@ -32,7 +43,7 @@ def load_opus():
             except Exception:
                 continue
 
-    # 3. Paths système classiques
+    # 4. Paths système classiques
     for lib in ['/usr/lib/x86_64-linux-gnu/libopus.so.0', 'libopus.so.0', 'libopus.so', 'opus']:
         try:
             discord.opus.load_opus(lib)
@@ -40,16 +51,6 @@ def load_opus():
             return
         except Exception:
             continue
-
-    # 4. ctypes.util
-    found = ctypes.util.find_library('opus')
-    if found:
-        try:
-            discord.opus.load_opus(found)
-            print(f"✅ Opus ctypes : {found}")
-            return
-        except Exception:
-            pass
 
     print("❌ Opus non trouvé")
 
