@@ -3,28 +3,35 @@ from discord.ext import commands
 import yt_dlp
 import asyncio
 import os
+import ctypes
 import ctypes.util
+import subprocess
+import sys
+
+# Installer opuslib si absent
+subprocess.run([sys.executable, "-m", "pip", "install", "opuslib", "-q"], capture_output=True)
 
 # Charger Opus manuellement
 def load_opus():
     if discord.opus.is_loaded():
         return
-    opus_libs = ['libopus.so.0', 'libopus.so', 'libopus0', 'opus', 'libopus-0']
-    for lib in opus_libs:
+    # Essayer plusieurs noms de lib
+    for lib in ['libopus.so.0', 'libopus.so', 'opus', 'libopus-0.dll', 'libopus.0.dylib']:
         try:
             discord.opus.load_opus(lib)
+            print(f"Opus chargé : {lib}")
             return
         except Exception:
             continue
-    # Chercher via ctypes
-    lib = ctypes.util.find_library('opus')
-    if lib:
-        discord.opus.load_opus(lib)
+    # Chercher via ctypes.util
+    found = ctypes.util.find_library('opus')
+    if found:
+        discord.opus.load_opus(found)
+        print(f"Opus trouvé via ctypes : {found}")
+        return
+    print("Opus non trouvé, le voice peut ne pas fonctionner")
 
-try:
-    load_opus()
-except Exception as e:
-    print(f"Avertissement Opus : {e}")
+load_opus()
 
 # FFmpeg path
 try:
